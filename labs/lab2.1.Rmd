@@ -92,5 +92,62 @@ library("sp")
 library("spacetime")
 ```
 
+```{r}
+NOAA_df_1990$date <- with(NOAA_df_1990,
+paste(year, month, day, sep = "-"))
+head(NOAA_df_1990$date, 4) # show first four elements
+```
+
+```{r}
+NOAA_df_1990$date <- as.Date(NOAA_df_1990$date)
+class(NOAA_df_1990$date)
+```
+```{r}
+Tmax_long2 <- filter(NOAA_df_1990, proc == "Tmax")
+STObj <- stConstruct(x = Tmax_long2, # data set
+space = c("lon", "lat"), # spatial fields
+time = "date") # time field
+class(STObj)
+```
+
+```{r}
+spat_part <- SpatialPoints(coords = Tmax_long2[, c("lon", "lat")])
+temp_part <- Tmax_long2$date
+STObj2 <- STIDF(sp = spat_part,
+time = temp_part,
+data = select(Tmax_long2, -date, -lon, -lat))
+class(STObj2)
+```
+
+```{r}
+spat_part <- SpatialPoints(coords = locs[, c("lon", "lat")])
+temp_part <- with(Times,
+paste(year, month, day, sep = "-"))
+temp_part <- as.Date(temp_part)
+Tmax_long3 <- gather(Tmax, id, z, -julian, -year, -month, -day)
+```
+
+```{r}
+Tmax_long3$id <- as.integer(Tmax_long3$id)
+Tmax_long3 <- arrange(Tmax_long3,julian,id)
+all(unique(Tmax_long3$id) == locs$id)
+```
+
+```{r}
+STObj3 <- STFDF(sp = spat_part,
+time = temp_part,
+data = Tmax_long3)
+class(STObj3)
+proj4string(STObj3) <- CRS("+proj=longlat +ellps=WGS84")
+STObj3$z[STObj3$z == -9999] <- NA
+```
+
+```{r}
+#this object is saved as a data file in STRbook
+data("STObj3", package = "STRbook")
+```
+
+
+
 
 
