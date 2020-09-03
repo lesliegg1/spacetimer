@@ -1,0 +1,13 @@
+---
+title: "Lab 2.1 Data Wrangling"
+output: html_notebook
+---
+
+This is Lab 2.1 on data wrangling.
+
+```{r}
+library("dplyr")
+library("tidyr")
+library("STRbook")
+```
+
