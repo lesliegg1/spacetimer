@@ -3,6 +3,11 @@ title: "Lab 2.1 Data Wrangling"
 output: html_notebook
 ---
 
+```{r}
+knitr::opts_chunk$set(message=FALSE, warning=FALSE)
+```
+
+
 This is Lab 2.1 on data wrangling.
 
 ```{r}
@@ -10,4 +15,82 @@ library("dplyr")
 library("tidyr")
 library("STRbook")
 ```
+
+```{r}
+locs <- read.table(system.file("extdata", "Stationinfo.dat",
+package = "STRbook"),
+col.names = c("id", "lat", "lon"))
+Times <- read.table(system.file("extdata", "Times_1990.dat",
+package = "STRbook"),
+col.names = c("julian", "year", "month", "day"))
+Tmax <- read.table(system.file("extdata", "Tmax_1990.dat",
+package = "STRbook"))
+```
+
+```{r}
+names(Tmax) <- locs$id
+Tmax <- cbind(Times, Tmax)
+head(names(Tmax), 10)
+```
+
+```{r}
+Tmax_long <- gather(Tmax, id, z, -julian, -year, -month, -day)
+head(Tmax_long)
+Tmax_long$id <- as.integer(Tmax_long$id)
+```
+
+```{r}
+nrow(Tmax_long)
+# filter is faster than subset for large datasets
+Tmax_long <- filter(Tmax_long, !(z <= -9998))
+nrow(Tmax_long)
+Tmax_long <- mutate(Tmax_long, proc = "Tmax")
+head(Tmax_long)
+```
+
+```{r}
+data(Tmin_long, package = "STRbook")
+data(TDP_long, package = "STRbook")
+data(Precip_long, package = "STRbook")
+```
+
+```{r}
+NOAA_df_1990 <- rbind(Tmax_long, Tmin_long, TDP_long, Precip_long)
+summ <- group_by(NOAA_df_1990, year, proc) %>% # groupings
+summarise(mean_proc = mean(z)) # operation
+NOAA_precip <- filter(NOAA_df_1990, proc == "Precip" & month == 6)
+summ <- group_by(NOAA_precip, year, id) %>%
+summarise(days_no_precip = sum(z == 0))
+head(summ)
+```
+
+```{r}
+median(summ$days_no_precip)
+```
+
+```{r}
+grps <- group_by(NOAA_precip, year, id)
+summ <- summarise(grps, days_no_precip = sum(z == 0))
+NOAA_df_sorted <- arrange(NOAA_df_1990, julian, id)
+df1 <- select(NOAA_df_1990, julian, z)
+df2 <- select(NOAA_df_1990, -julian)
+```
+
+```{r}
+NOAA_df_1990 <- left_join(NOAA_df_1990, locs, by = "id") # left join faster than merge
+```
+
+```{r}
+Tmax_long_sel <- select(Tmax_long, julian, id, z)
+Tmax_wide <- spread(Tmax_long_sel, id, z)
+dim(Tmax_wide)
+M <- select(Tmax_wide, -julian) %>% as.matrix()
+```
+
+```{r}
+library("sp")
+library("spacetime")
+```
+
+
 
